@@ -1,4 +1,3 @@
-import { User } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { duplicatedEmailError } from './errors';
@@ -7,7 +6,7 @@ import { conflictError, invalidDataError } from '@/errors';
 import { SignUp } from '@/protocols';
 
 async function createUser({ name, email, password }: SignUp) {
-  await userRepository.findByEmail(email);
+  validateUniqueEmailOrFail(email);
 
   const hashPassword = await bcrypt.hash(password, 10);
   await userRepository.create({ name, email, password: hashPassword });
@@ -32,8 +31,9 @@ async function login(email: string, password: string) {
   }
 
   const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET);
+  const name = user.name;
 
-  return token;
+  return { token, name , email };
 }
 
 const userService = {
